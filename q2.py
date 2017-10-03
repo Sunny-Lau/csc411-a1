@@ -6,6 +6,7 @@ Created on Tue Sep 12 20:39:09 2017
 from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.misc as misc
 from sklearn.datasets import load_boston
 np.random.seed(0)
 
@@ -47,7 +48,7 @@ def run_on_fold(x_test, y_test, x_train, y_train, taus):
     for j,tau in enumerate(taus):
         predictions =  np.array([LRLS(x_test[i,:].reshape(1,d),x_train,y_train, tau) \
                         for i in range(N_test)])
-        losses[j] = ((predictions-y_test)**2).mean()
+        losses[j] = ((predictions-y_test) ** 2).mean()
     return losses
  
  
@@ -61,11 +62,21 @@ def LRLS(test_datum,x_train,y_train, tau,lam=1e-5):
            lam is the regularization parameter
     output is y_hat the prediction on test_datum
     '''
-    ## TODO
-    return None
-    ## TODO
+    
+    numerator = np.exp(np.divide(-1 * (l2(test_datum, x_train)), 2 * tau ** 2))
+    denominator = np.exp(misc.logsumexp(np.divide(-1 * (l2(test_datum, x_train)), 2 * tau ** 2))) # 
 
+    A = np.divide(numerator, denominator)
+    A = np.diag(A[0,:])
 
+    a = np.dot(np.dot(np.transpose(x_train), A),x_train) #X^TAX
+    b = np.dot(np.dot(np.transpose(x_train), A),y_train) #X^TAy
+
+    W = np.linalg.solve(a + (lam*np.eye(a.shape[0])), b) #solve W
+
+    predict_y = np.dot(test_datum, W)
+
+    return predict_y
 
 
 def run_k_fold(x,y,taus,k):
@@ -77,14 +88,48 @@ def run_k_fold(x,y,taus,k):
     output is losses a vector of k-fold cross validation losses one for each tau value
     '''
     ## TODO
-    return None
-    ## TODO
+
+    fold_size = int(np.round(N/k))
+    print("The number of dataset is: {} ".format(N))
+    print("The fold size is: {} ".format(fold_size))
+    print("##############################\n")
+
+    losses = np.empty([k, len(taus)])
+
+    for i in range(k):
+        test = idx[i * fold_size:((i + 1) * fold_size)]
+        train = [s for s in idx if s not in test] 
+        x_test = x[test,:]
+        x_train = x[train,:]
+        y_test = y[test]
+        y_train = y[train]
+
+        print("This is fold # {}: ".format(i))
+        print("""   The dimension of X_test: {}, y_test: {}, \n \
+                  X_train: {}, y_train: {} \n""".format(x_test.shape, y_test.shape, x_train.shape, y_train.shape))
+        print("##############################\n")
+        if i < 5:
+            print("Calculating fold {} ... ...\n".format(i + 1))
+
+        losses[i,:] = run_on_fold(x_test, y_test, x_train, y_train, taus)
+
+    return np.mean(losses, axis=0)
 
 
 if __name__ == "__main__":
     # In this excersice we fixed lambda (hard coded to 1e-5) and only set tau value. Feel free to play with lambda as well if you wish
-    taus = np.logspace(1.0,3,200)
-    losses = run_k_fold(x,y,taus,k=5)
-    plt.plot(losses)
+    taus = np.logspace(1.0, 3, 200)
+    losses = run_k_fold(x, y, taus, k=5)
+    plt.plot(taus, losses)
+
+    axe = plt.gca()
+    axe.grid()
+    axe.set_xlabel('Tau')
+    axe.set_ylabel('Average losses')
+
+    plt.show()
+
+    # Try different k value:
+
     print("min loss = {}".format(losses.min()))
 
