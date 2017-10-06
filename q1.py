@@ -1,6 +1,7 @@
 from sklearn import datasets
 import matplotlib.pyplot as plt
 import numpy as np
+np.random.seed(0)
 
 def load_data():
     boston = datasets.load_boston()
@@ -62,8 +63,15 @@ def test_module(w, X, y):
     np_y = np.array(y)
 
     predict_y = np.dot(biased_x, w)
-    MSE = np.divide(np.sum(np.power(np.subtract(np_y, predict_y), 2)), len(biased_x))
-    print("MSE of this linear regression module is {}.".format(MSE))
+
+    MSE = np.divide(np.sum(np.power(np.subtract(np_y, predict_y), 2)), np.array(X).shape[0])
+    print("MSE of this linear regression module is: {}.".format(MSE))
+
+    MAE = np.divide(np.sum(np.absolute(np.subtract(np_y, predict_y))), np.array(X).shape[0])
+    print("mean absolute error is: {} ".format(MAE))
+
+    EVS = 1 - np.divide(np.var(np_y - predict_y), np.var(np_y))
+    print("Explained variance score is: {} ".format(EVS))
 
 
 def get_features_weight(w, features):
@@ -71,6 +79,7 @@ def get_features_weight(w, features):
     print("----------------------------")
     for i in range(len(features)):
         print("The weight of feature {} is {}".format(features[i], w[i]))
+    print("----------------------------")
 
 def main():
     # Load the data

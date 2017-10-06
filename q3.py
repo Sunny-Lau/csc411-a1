@@ -1,7 +1,9 @@
 import numpy as np
 from sklearn.datasets import load_boston
+import matplotlib.pyplot as plt
 
 BATCHES = 50
+K = 500
 
 class BatchSampler(object):
     '''
@@ -78,9 +80,19 @@ def lin_reg_gradient(X, y, w):
     '''
     Compute gradient of linear regression model parameterized by w
     '''
-    raise NotImplementedError()
+    # raise NotImplementedError()
+
+    N = X.shape[0]
+
+    XTXW = np.dot(np.dot(np.transpose(X), X), w)
+    XTy = np.dot(np.transpose(X), y)
+    gradient = np.divide((2 * XTXW - 2 * XTy), N)
+    
+    return gradient
 
 def main():
+    np.random.seed(0) 
+
     # Load data and randomly initialise weights
     X, y, w = load_data_and_init_params()
     # Create a batch sampler to generate random batches from data
@@ -90,6 +102,42 @@ def main():
     X_b, y_b = batch_sampler.get_batch()
     batch_grad = lin_reg_gradient(X_b, y_b, w)
 
+    # compare the result mini_batch gradient to the true gradient
+    mini_batch_gradients = []
+    for k in range(K):
+        X_b, y_b = batch_sampler.get_batch()
+        mini_batch_gradients.append(lin_reg_gradient(X_b, y_b, w))
+
+    mean_gradient = (1/K) * np.array(mini_batch_gradients).sum(axis=0)
+    true_gradient = lin_reg_gradient(X, y, w)
+
+    squared_distance_metric = np.linalg.norm(true_gradient - mean_gradient) ** 2
+    cosine_similarity_metric = cosine_similarity(true_gradient, mean_gradient)
+
+    print("squared distance metric is: {} ".format(squared_distance_metric))
+    print("cosine similarity metric is: {} ".format(cosine_similarity_metric))
+    
+    # plot log of variance against log of m
+    variances = []
+    for m in range(1, 400):
+        batch_sampler = BatchSampler(X, y, m)
+        mini_batch_gradients = []
+
+        for k in range(K):
+            X_b, y_b = batch_sampler.get_batch()
+            mini_batch_gradients.append(lin_reg_gradient(X_b, y_b, w))
+
+        variances.append(np.var([gradient[0] for gradient in mini_batch_gradients]))
+
+    log_m = [np.log(m) for m in range(1, 400)]
+    log_var = [np.log(var) for var in variances]
+
+    # plot the diagram
+    plt.plot(log_m, log_var)
+    plt.ylabel("log(var(mini-batch gradients))")
+    plt.xlabel("log(m)")
+    plt.show()
 
 if __name__ == '__main__':
+
     main()

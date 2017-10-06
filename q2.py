@@ -72,7 +72,7 @@ def LRLS(test_datum,x_train,y_train, tau,lam=1e-5):
     a = np.dot(np.dot(np.transpose(x_train), A),x_train) #X^TAX
     b = np.dot(np.dot(np.transpose(x_train), A),y_train) #X^TAy
 
-    W = np.linalg.solve(a + (lam*np.eye(a.shape[0])), b) #solve W
+    W = np.linalg.solve(a + lam * np.eye(a.shape[0]), b) #solve W
 
     predict_y = np.dot(test_datum, W)
 
